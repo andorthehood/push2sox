@@ -1,30 +1,29 @@
+#!/usr/bin/env node
+
 import { createTranscriber } from "./transcribe.ts";
 import { createRecorder } from "./recording.ts";
 import { createSerialController } from "./serial.ts";
 import { createAction } from "./action.ts";
 import os from "os";
-import minimist from "minimist";
+import { Command } from "commander";
 
-const argv = minimist(process.argv.slice(2), {
-  string: ["serial-port", "api-key", "action-template"],
-  default: {
-    "baud-rate": 9600,
-    "sample-rate": 44100,
-  },
-});
+const program = new Command();
 
-const portPath = argv["serial-port"] ? String(argv["serial-port"]) : "";
-if (!portPath) {
-  console.error("Missing required flag: --serial-port");
-  process.exit(1);
-}
-const baudRate = Number(argv["baud-rate"]);
-const sampleRate = Number(argv["sample-rate"]);
-const actionTemplate = argv["action-template"]
-  ? String(argv["action-template"])
-  : undefined;
+program
+  .requiredOption("--serial-port <path>")
+  .requiredOption("--api-key <key>")
+  .option("--baud-rate <number>", "", "9600")
+  .option("--sample-rate <number>", "", "44100")
+  .option("--action-template <template>", "", "echo {text}");
 
-const apiKey = argv["api-key"] ? String(argv["api-key"]) : undefined;
+program.parse(process.argv);
+const options = program.opts();
+
+const portPath = String(options.serialPort);
+const apiKey = String(options.apiKey);
+const baudRate = Number(options.baudRate);
+const sampleRate = Number(options.sampleRate);
+const actionTemplate = String(options.actionTemplate);
 
 const transcriber = createTranscriber({ apiKey });
 const action = createAction({ commandTemplate: actionTemplate });

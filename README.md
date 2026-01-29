@@ -24,12 +24,18 @@ npm start -- \
   --action-template "echo {text}"
 ```
 
+## Install as CLI
+```bash
+npm install -g .
+speech2shell --serial-port /dev/cu.usbmodem2102 --baud-rate 9600 --sample-rate 44100 --api-key YOUR_KEY
+```
+
 ## CLI flags
 - `--serial-port` (required)
 - `--baud-rate` (default `9600`)
 - `--sample-rate` (default `44100`)
-- `--api-key` (required for transcription)
-- `--action-template` (optional; defaults to logging to console)
+- `--api-key` (required)
+- `--action-template` (optional; defaults to `echo {text}`)
 
 ## Make targets
 ```bash
