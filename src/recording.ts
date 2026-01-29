@@ -78,5 +78,24 @@ export function createRecorder({ sampleRate, outputDir }: RecorderOptions) {
     currentProcess.kill("SIGINT");
   };
 
-  return { start, stop, isRecording };
+  const cleanup = async (filePath: string) => {
+    try {
+      await fs.promises.unlink(filePath);
+    } catch (err) {
+      if (
+        err &&
+        typeof err === "object" &&
+        "code" in err &&
+        err.code === "ENOENT"
+      ) {
+        return;
+      }
+      console.error(
+        "Failed to remove recording:",
+        err instanceof Error ? err.message : err
+      );
+    }
+  };
+
+  return { start, stop, isRecording, cleanup };
 }

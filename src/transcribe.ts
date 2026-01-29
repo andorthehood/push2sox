@@ -10,12 +10,12 @@ export function createTranscriber({ apiKey }: TranscriberOptions) {
   const transcribe = async (filePath: string) => {
     if (transcribing) {
       console.log("Transcription already in progress.");
-      return;
+      return null;
     }
 
     if (!apiKey) {
       console.log("ASSEMBLYAI_API_KEY not set; skipping transcription.");
-      return;
+      return null;
     }
 
     transcribing = true;
@@ -30,10 +30,11 @@ export function createTranscriber({ apiKey }: TranscriberOptions) {
       const transcript = await client.transcripts.transcribe(params);
 
       if (transcript && transcript.text) {
-        console.log(`Transcript: ${transcript.text}`);
-      } else {
-        console.log("Transcript empty.");
+        return transcript.text;
       }
+
+      console.log("Transcript empty.");
+      return "";
     } finally {
       transcribing = false;
     }

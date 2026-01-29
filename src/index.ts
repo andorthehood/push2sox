@@ -3,17 +3,22 @@ import "dotenv/config";
 import { createTranscriber } from "./transcribe.ts";
 import { createRecorder } from "./recording.ts";
 import { createSerialController } from "./serial.ts";
+import { createAction } from "./action.ts";
+import os from "os";
 
 const PORT_PATH = process.env.SERIAL_PORT || "/dev/cu.usbmodem2102";
 const BAUD_RATE = Number(process.env.BAUD_RATE || 9600);
 const SAMPLE_RATE = Number(process.env.SAMPLE_RATE || 44100);
-const OUTPUT_DIR = process.env.OUTPUT_DIR || "recordings";
+const TRANSCRIPT_COMMAND_TEMPLATE = process.env.TRANSCRIPT_COMMAND_TEMPLATE;
 
 const ASSEMBLYAI_API_KEY = process.env.ASSEMBLYAI_API_KEY;
 const transcriber = createTranscriber({ apiKey: ASSEMBLYAI_API_KEY });
+const action = createAction({
+  commandTemplate: TRANSCRIPT_COMMAND_TEMPLATE,
+});
 const recorder = createRecorder({
   sampleRate: SAMPLE_RATE,
-  outputDir: OUTPUT_DIR,
+  outputDir: os.tmpdir(),
 });
 
 function onRecordingStart() {
@@ -23,9 +28,21 @@ function onRecordingStart() {
 function onRecordingStop(filePath: string | null) {
   serial.send("OFF");
   if (filePath) {
-    transcriber.transcribe(filePath).catch((err) => {
-      console.error("Transcription error:", err.message);
-    });
+    handleRecordingStop(filePath);
+  }
+}
+
+async function handleRecordingStop(filePath: string) {
+  try {
+    const text = await transcriber.transcribe(filePath);
+    if (text) {
+      const ok = await action(text);
+      if (ok) {
+        await recorder.cleanup(filePath);
+      }
+    }
+  } catch (err) {
+    console.error("Transcription error:", err instanceof Error ? err.message : err);
   }
 }
 
