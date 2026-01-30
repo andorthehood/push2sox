@@ -6,6 +6,7 @@ type TranscriberOptions = {
 
 export function createTranscriber({ apiKey }: TranscriberOptions) {
   let transcribing = false;
+  let cancelToken = 0;
 
   const transcribe = async (filePath: string) => {
     if (transcribing) {
@@ -19,6 +20,7 @@ export function createTranscriber({ apiKey }: TranscriberOptions) {
     }
 
     transcribing = true;
+    const token = ++cancelToken;
     try {
       const client = new AssemblyAI({ apiKey });
       const params = {
@@ -28,6 +30,11 @@ export function createTranscriber({ apiKey }: TranscriberOptions) {
 
       console.log(`Transcribing ${filePath}...`);
       const transcript = await client.transcripts.transcribe(params);
+
+      if (token !== cancelToken) {
+        console.log("Transcription cancelled.");
+        return null;
+      }
 
       if (transcript && transcript.text) {
         console.log("Transcription complete.");
@@ -43,6 +50,9 @@ export function createTranscriber({ apiKey }: TranscriberOptions) {
   };
 
   const isTranscribing = () => transcribing;
+  const cancel = () => {
+    cancelToken++;
+  };
 
-  return { transcribe, isTranscribing };
+  return { transcribe, isTranscribing, cancel };
 }

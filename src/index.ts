@@ -36,18 +36,16 @@ function onRecordingStart() {
   serial.send("ON");
 }
 
-function onRecordingStop(filePath: string | null) {
+async function onRecordingStop(filePath: string | null) {
   serial.send("OFF");
-  if (filePath) {
-    handleRecordingStop(filePath);
+  if (!filePath) {
+    return;
   }
-}
 
-async function handleRecordingStop(filePath: string) {
   try {
     const text = await transcriber.transcribe(filePath);
     if (text) {
-      const ok = await action(text);
+      const ok = await action.run(text);
       if (!ok) {
         console.error("Action failed.");
       }
@@ -63,6 +61,8 @@ const serial = createSerialController({
   portPath,
   baudRate,
   onStart: () => {
+    transcriber.cancel();
+    action.cancel();
     recorder.start({ onStart: onRecordingStart, onStop: onRecordingStop });
   },
   onStop: () => {
